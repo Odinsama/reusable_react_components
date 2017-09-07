@@ -43,16 +43,20 @@ class BarChart extends Component {
             .selectAll('rect')
             .data(this.props.data)
             .style('fill', '#fe9922')
-            .attr('x', (d,i) => i * 25)
+            .attr('x', (d,i) => i * 30)
             .attr('y', d => this.props.size[1] - yScale(d))
             .attr('height', d => yScale(d))
             .attr('width', 25);
     }
 
     render() {
-        return <svg ref={node => this.node = node}
-                    width={500} height={500}>
-                </svg>
+        return (
+            <svg
+                 ref={node => this.node = node}
+                 width={this.props.size[0]}
+                 height={this.props.size[1]}>
+            </svg>
+        );
     }
 }
 

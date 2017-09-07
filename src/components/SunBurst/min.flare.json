@@ -1,0 +1,40 @@
+{
+  "name": "flare",
+  "children": [
+    {
+      "name": "analytics",
+      "children": [
+        {
+          "name": "cluster",
+          "children": [
+            {"name": "AgglomerativeCluster", "size": 3938},
+            {"name": "CommunityStructure", "size": 3812}
+          ]
+        },
+        {
+          "name": "graph",
+          "children": [
+            {"name": "BetweennessCentrality", "size": 3534},
+            {"name": "LinkDistance", "size": 5731}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "animate",
+      "children": [
+        {"name": "Easing",
+          "children": [
+            {"name": "GoTIsAwesome", "size": 17010},
+            {"name": "Rick and Morty", "size": 23421}
+          ]},
+        {"name": "FunctionSequence",
+          "children": [
+            {"name": "DetRegnerIkke", "size": 5636},
+            {"name": "Jenta jobber i bakeri", "size": 6233}
+          ]
+        }
+      ]
+    }
+  ]
+}
