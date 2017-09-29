@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import {scaleOrdinal, schemeCategory20c} from "d3-scale";
 import select from "d3-selection/src/select";
 import {transition, hierarchy, treemap} from 'd3';
+import * as d3 from "d3";
 
 class TreeMap extends Component {
     constructor(props) {
@@ -29,39 +30,39 @@ class TreeMap extends Component {
 
         const treeMap = treemap().size([width, height]);
 
-        select(node)
-            .append('div')
-            .attr('id', 'tree_div')
-            .style("position", "absolute")
-            .style("width", (width + 20) + "px")
-            .style("height", (height + 50) + "px")
-            .style("left", 10 + "px")
-            .style("top", 40 + "px");
+         select(node)
+             .append('g')
+             .attr('id', 'tree_group')
+             .style("position", "absolute")
+             .style("width", (width + 20) + "px")
+             .style("height", (height + 50) + "px")
+             .style("left", 10 + "px")
+             .style("top", 40 + "px");
 
 
+        const formatNumber = d3.format(",d");
 
 
             const root = hierarchy(data)
-                .sum((d) => d.size);
+                .sum(d => d.size);
 
             const tree = treeMap(root);
 
-            let myTree = select('#tree_div')
+            let myTree = select('#tree_group')
                 .datum(root)
                 .selectAll(".node")
                 .data(tree.leaves())
-                .enter()
-                .append('div')
+                .enter().append('rect')
                 .attr("class", "node")
                 .style("left", (d) => d.x0 + "px")
                 .style("top", (d) => d.y0 + "px")
                 .style("width", (d) => Math.max(0, d.x1 - d.x0 - 1) + "px")
                 .style("height", (d) => Math.max(0, d.y1 - d.y0  - 1) + "px")
-                .style("background", (d) => color(d.parent.data.name))
-                .text((d) => d.data.name);
+                .style("background", (d) => color((d.children ? d : d.parent).data.name))
+                .text((d) => d.data.name + "\n" + formatNumber(d.value));
 
             select('.example')
-                .style("height", (height + 50) + "px");
+                .style("height", (height * 2 + 50) + "px");
 
             select(node)
                 .selectAll("input")
@@ -79,7 +80,7 @@ class TreeMap extends Component {
                     myTree.data(leaves).enter().append('div').attr("class", "node");
 
 
-                    transition().duration(1500).select("#tree_div")
+                    transition().duration(1500).select("#tree_group")
                         .selectAll(".node")
                         .style("left", (d) => d.x0 + "px")
                         .style("top", (d) => d.y0 + "px")
