@@ -48,7 +48,6 @@ class TimeLine extends Component {
 
         const xAxis = d3.axisBottom(xScale),
             xAxis2 = d3.axisBottom(xScale2),
-            xAxis3 = d3.axisBottom(xScale3),
             yAxis = d3.axisLeft(yScale);
 
         const brush = d3.brushX()
@@ -103,8 +102,8 @@ class TimeLine extends Component {
             xScale.domain(d3.extent(data, d => d.date));
             yScale.domain([0, d3.max(data,d => d.price)]);
             xScale2.domain(xScale.domain());
-            yScale2.domain(yScale.domain());
             xScale3.domain(xScale.domain());
+            yScale2.domain(yScale.domain());
 
 
             focus.append("path")
@@ -155,16 +154,19 @@ class TimeLine extends Component {
         });
 
         let explodedDomains = [];
+        let latestBrushDateSelection = [];
+        let latestChartT = null
 
 
         function resetAll() {
 
             explodedDomains = [];
-            const range = xScale3.range();
+            latestBrushDateSelection = [];
             xScale2.domain(xScale3.domain());
             xScale.domain(xScale3.domain());
-            context.select(".axis--x").call(xAxis3);
-            focus.select(".axis--x").call(xAxis3);
+            context.select(".axis--x").call(xAxis2);
+            focus.select(".axis--x").call(xAxis);
+            const range = xScale.range();
             context.select(".brush").call(zoom.transform, d3.zoomIdentity
                 .scale(width / (range[1] - range[0]))
                 .translate(-range[0], 0));
@@ -229,7 +231,11 @@ class TimeLine extends Component {
         }
 
         function explodeBrush() {
-            explodedDomains.push(xScale2.domain());
+            explodedDomains.push({
+                domain: xScale2.domain(),
+                tValue: latestChartT
+        }
+            );
             xScale2.domain(xScale.domain());
             const range = xScale2.range();
             context.select(".axis--x").call(xAxis2);
@@ -242,14 +248,11 @@ class TimeLine extends Component {
 
         function implodeBrush() {
 
-            xScale2.domain(explodedDomains.pop());
+            if (explodedDomains.length === 0) return;
+            xScale2.domain(explodedDomains.pop().domain);
             context.select(".axis--x").call(xAxis2);
             focus.select(".axis--x").call(xAxis2);
-            const range = xScale2.range();
-            context.select(".brush").call(zoom.transform, d3.zoomIdentity
-                .scale(width / (range[1] - range[0]))
-                .translate(-range[0], 0));
-
+            context.select(".brush").call(brush.move, latestBrushDateSelection.map(d => xScale2(d)))
         }
 
 
@@ -257,29 +260,44 @@ class TimeLine extends Component {
         function brushChart() {
 
             const s = d3.event.selection || xScale2.range();
-            xScale.domain(s.map(xScale2.invert, xScale2));
+            console.log(zoom.transform);
+            const brushDateSelection = s.map(xScale2.invert, xScale2)
+            xScale.domain(brushDateSelection);
             focus.select(".area").attr("d", area);
             focus.select(".axis--x").call(xAxis);
             context.select(".brush").call(zoom.transform, d3.zoomIdentity
                 .scale(width / (s[1] - s[0]))
                 .translate(-s[0], 0));
 
+            latestBrushDateSelection = brushDateSelection;
+
         }
 
         function zoomChart() {
-            let t = d3.event.transform;
+            const t = d3.event.transform;
 
             xScale.domain(t.rescaleX(xScale2).domain());
             focus.select(".axis--x").call(xAxis);
             focus.select(".area").attr("d", area);
-            context.select(".brush").call(brush.move, xScale.range().map(t.invertX, t));
+            const brushCoords = xScale.range().map(t.invertX, t);
+            context.select(".brush").call(brush.move, brushCoords);
+            latestBrushDateSelection = brushCoords.map(d => xScale2.invert(d));
+            latestChartT = t
         }
 
-        let brushEnabled = true;
+        function zoomScale() {
+            const t = d3.event.transform;
+
+            xScale2.domain(t.rescaleX(xScale3).domain());
+            context.select(".axis--x").call(xAxis2);
+            console.log(latestBrushDateSelection);
+            context.select(".brush").call(brush.move, latestBrushDateSelection.map(d => xScale2(d)))
+        }
 
         function brushed() {
 
-            const source = d3.event.sourceEvent;
+            const event = d3.event;
+            const source = event.sourceEvent;
 
             /**stopping brush calling zoom and vice versa*/
             if (source && source.type === "brush") {
@@ -287,15 +305,16 @@ class TimeLine extends Component {
             else if (source && source.type === "zoom") {
             }
 
+            else if (event && event.type === "zoom" && source && source.altKey === true){
+                zoomScale()
+            }
 
-            else if (d3.event && d3.event.type === "zoom") {
+            else if (event && event.type === "zoom") {
                 zoomChart()
             }
 
-            else if (d3.event && d3.event.type === "brush") {
-                if (brushEnabled) {
-                    brushChart()
-                }
+            else if (event && event.type === "brush") {
+                brushChart()
             }
 
             else if (source && source.type === "mouseup" && source.ctrlKey === true && source.altKey === true) {
@@ -306,6 +325,9 @@ class TimeLine extends Component {
             }
             else if (source && source.type === "mouseup" && source.ctrlKey === true) {
                 explodeBrush()
+            }
+            else {
+                console.log(d3.event)
             }
 
 
